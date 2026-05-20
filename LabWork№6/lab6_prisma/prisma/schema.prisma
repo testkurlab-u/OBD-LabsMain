@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model category {
+  category_id   Int             @id @default(autoincrement())
+  name          String          @db.VarChar(100)
+  film_category film_category[]
+}
+
+model film {
+  film_id       Int             @id @default(autoincrement())
+  title         String          @db.VarChar(255)
+  rental_rate   Decimal         @db.Decimal(5, 2)
+  film_category film_category[]
+  inventory     inventory[]
+  reviews       review[]
+}
+
+model film_category {
+  film_id     Int
+  category_id Int
+  category    category @relation(fields: [category_id], references: [category_id], onDelete: Cascade, onUpdate: NoAction)
+  film        film     @relation(fields: [film_id], references: [film_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([film_id, category_id])
+}
+
+model inventory {
+  inventory_id Int            @id @default(autoincrement())
+  film_id      Int?
+  condition    disk_condition @default(New)
+  film         film?          @relation(fields: [film_id], references: [film_id], onDelete: Restrict, onUpdate: NoAction)
+  rental       rental[]
+}
+
+model customer {
+  customer_id Int       @id @default(autoincrement())
+  first_name  String    @db.VarChar(100)
+  last_name   String    @db.VarChar(100)
+  email       String?   @unique @db.VarChar(150)
+  is_vip      Boolean   @default(false)
+  payment     payment[]
+  rental      rental[]
+}
+
+model staff {
+  staff_id   Int            @id @default(autoincrement())
+  first_name String         @db.VarChar(100)
+  last_name  String         @db.VarChar(100)
+  position   staff_position
+  status     staff_status   @default(Active)
+  rental     rental[]
+}
+
+model rental {
+  rental_id    Int        @id @default(autoincrement())
+  rental_date  DateTime   @default(now()) @db.Timestamp(6)
+  return_date  DateTime?  @db.Timestamp(6)
+  customer_id  Int?
+  inventory_id Int?
+  staff_id     Int?
+  payment      payment[]
+  customer     customer?  @relation(fields: [customer_id], references: [customer_id], onDelete: Restrict, onUpdate: NoAction)
+  inventory    inventory? @relation(fields: [inventory_id], references: [inventory_id], onDelete: Restrict, onUpdate: NoAction)
+  staff        staff?     @relation(fields: [staff_id], references: [staff_id], onDelete: Restrict, onUpdate: NoAction)
+}
+
+model payment {
+  payment_id   Int            @id @default(autoincrement())
+  amount       Decimal        @db.Decimal(7, 2)
+  payment_date DateTime       @default(now()) @db.Timestamp(6)
+  status       payment_status @default(Completed)
+  rental_id    Int?
+  customer_id  Int?
+  customer     customer?      @relation(fields: [customer_id], references: [customer_id], onDelete: Restrict, onUpdate: NoAction)
+  rental       rental?        @relation(fields: [rental_id], references: [rental_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+enum disk_condition {
+  New
+  Good
+  Damaged
+  Lost
+}
+
+enum payment_status {
+  Completed
+  Delayed
+  Cancelled
+}
+
+enum staff_position {
+  Cashier
+  Manager
+  Administrator
+}
+
+enum staff_status {
+  Active
+  On_Leave
+  Temporary
+}
+
+model review {
+  review_id Int     @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  film_id   Int
+  film      film    @relation(fields: [film_id], references: [film_id])
+}
